@@ -16,7 +16,6 @@ router.get("/machines/:companyUid", async (req, res) => {
 // Add a new machine
 router.post("/machines", async (req, res) => {
   try {
-    console.log("Incoming request data:", req.body); // Log the request data
     const { name, usageTime, serviceDate, companyUid } = req.body;
 
     // Validate required fields
