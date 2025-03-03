@@ -1,142 +1,212 @@
-// src/pages/Dashboard.tsx
-import React from 'react';
-import { Card, Typography, Table, Row, Col, Statistic } from 'antd';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar } from 'recharts';
+import React, { useState, useEffect } from "react";
+import { Card, Typography, Table, Row, Col, Statistic, message } from "antd";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
+import axios from "axios";
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
-const usageData = [
-  { month: 'Jan', usage: 65 },
-  { month: 'Feb', usage: 59 },
-  { month: 'Mar', usage: 80 },
-  { month: 'Apr', usage: 81 },
-  { month: 'May', usage: 56 },
-  { month: 'Jun', usage: 55 },
-  { month: 'Jul', usage: 40 },
-];
+// Define types for data structures
+interface UsageData {
+  date: string;
+  [key: string]: number | string; // Allow dynamic keys for machine names
+}
 
-const productivityData = [
-  { month: 'Jan', productivity: 70 },
-  { month: 'Feb', productivity: 65 },
-  { month: 'Mar', productivity: 85 },
-  { month: 'Apr', productivity: 80 },
-  { month: 'May', productivity: 75 },
-  { month: 'Jun', productivity: 70 },
-  { month: 'Jul', productivity: 60 },
-];
+interface MachineData {
+  id: number;
+  name: string;
+  usageTime: { time: number; date: string }[];
+  serviceDate: string[];
+}
 
-const columns = [
-  {
-    title: 'ID',
-    dataIndex: 'id',
-    key: 'id',
-  },
-  {
-    title: 'Model',
-    dataIndex: 'model',
-    key: 'model',
-  },
-  {
-    title: 'Status',
-    dataIndex: 'status',
-    key: 'status',
-  },
-  {
-    title: 'Last Maintenance',
-    dataIndex: 'lastMaintenance',
-    key: 'lastMaintenance',
-  },
-];
+interface EmployeeData {
+  id: number;
+  name: string;
+  status: string;
+  role: string;
+}
 
-const inventoryData = [
-  { id: 'L001', model: 'Model A', status: 'Available', lastMaintenance: '2023-10-01' },
-  { id: 'L002', model: 'Model B', status: 'In Use', lastMaintenance: '2023-09-15' },
-  // Add more rows as needed
-];
+const Dashboard: React.FC = () => {
+  const [usageData, setUsageData] = useState<UsageData[]>([]);
+  const [machineData, setMachineData] = useState<MachineData[]>([]);
+  const [employeeData, setEmployeeData] = useState<EmployeeData[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
-const employeeData = [
-  { id: 'E001', name: 'John Doe', status: 'Active' },
-  { id: 'E002', name: 'Jane Smith', status: 'Inactive' },
-  { id: 'E003', name: 'Alice Johnson', status: 'Active' },
-  { id: 'E004', name: 'Bob Brown', status: 'Inactive' },
-  // Add more rows as needed
-];
+  const companyUid = JSON.parse(sessionStorage.getItem("user") || "{}").companyUid;
 
-const activeEmployees = employeeData.filter(emp => emp.status === 'Active').length;
-const inactiveEmployees = employeeData.filter(emp => emp.status === 'Inactive').length;
+  // Fetch real data from the backend
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch machine data
+        const machinesResponse = await axios.get(
+          `http://localhost:3000/api/machines/${companyUid}`
+        );
+        setMachineData(machinesResponse.data);
 
-const Dashboard = () => {
+        // Fetch employee data
+        const employeesResponse = await axios.get(
+          `http://localhost:3000/api/company/employees/${companyUid}`
+        );
+        setEmployeeData(employeesResponse.data);
+
+        // Group usage data by date and machine
+        const groupedUsageData: { [key: string]: UsageData } = {};
+        machinesResponse.data.forEach((machine: MachineData) => {
+          machine.usageTime.forEach((usage) => {
+            const dateKey = usage.date.split("T")[0]; // Extract only the date part
+            if (!groupedUsageData[dateKey]) {
+              groupedUsageData[dateKey] = { date: dateKey };
+            }
+            groupedUsageData[dateKey][machine.name] = usage.time; // Add machine-specific usage
+          });
+        });
+
+        // Convert grouped data into an array
+        const mergedUsageData = Object.values(groupedUsageData).sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+
+        setUsageData(mergedUsageData);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        message.error("Failed to fetch data");
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [companyUid]);
+
+  // Calculate active and inactive employees
+  const activeEmployees = employeeData.filter((emp) => emp.status === "Active").length;
+  const inactiveEmployees = employeeData.filter((emp) => emp.status === "Inactive").length;
+
+  // Define table columns for employees
+  const employeeColumns = [
+    {
+      title: "Name",
+      dataIndex: "username",
+      key: "username",
+    },
+    {
+      title: "Role",
+      dataIndex: "role",
+      key: "role",
+    },
+  ];
+
+  // Define table columns for machines
+  const machineColumns = [
+    {
+      title: "Name",
+      dataIndex: "name",
+      key: "name",
+    },
+    {
+      title: "Usage Time",
+      dataIndex: "usageTime",
+      key: "usageTime",
+      render: (text: { time: number; date: string }[]) =>
+        text.map((item) => `${item.time} hours at ${item.date.split("T")[0]}`).join(", "), // Extract only the date part
+    },
+    {
+      title: "Service Dates",
+      dataIndex: "serviceDate",
+      key: "serviceDate",
+      render: (text: string[]) => text.map((date) => date.split("T")[0]).join(", "), // Extract only the date part
+    },
+  ];
+
   return (
-    <div style={{ padding: '24px' }}>
+    <div className="flex flex-col gap-4">
+      {/* Row 1: Statistics */}
       <Row gutter={[16, 16]}>
         <Col span={8}>
           <Card>
-            <Statistic title="Total Lathes" value={150} />
+            <Title level={3}>Active Employees</Title>
+            <Statistic title="Count" value={activeEmployees} />
           </Card>
         </Col>
         <Col span={8}>
           <Card>
-            <Statistic title="Available Lathes" value={100} />
+            <Title level={3}>Inactive Employees</Title>
+            <Statistic title="Count" value={inactiveEmployees} />
           </Card>
         </Col>
         <Col span={8}>
           <Card>
-            <Statistic title="In Use Lathes" value={50} />
+            <Title level={3}>Total Machines</Title>
+            <Statistic title="Count" value={machineData.length} />
           </Card>
         </Col>
       </Row>
 
-      <Row gutter={[16, 16]} style={{ marginTop: '24px' }}>
-        <Col span={12}>
+      {/* Row 2: Usage Time Line Chart */}
+      <Row gutter={[16, 16]}>
+        <Col span={24}>
           <Card>
-            <Title level={4}>Usage Trend</Title>
-            <LineChart width={600} height={250} data={usageData}>
+            <Title level={3}>Machine Usage Over Time</Title>
+            <LineChart
+              width={1200}
+              height={400}
+              data={usageData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
+              <XAxis dataKey="date" />
               <YAxis />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="usage" stroke="#8884d8" activeDot={{ r: 8 }} />
-            </LineChart>
-          </Card>
-        </Col>
-        <Col span={12}>
-          <Card>
-            <Title level={4}>Employee Productivity</Title>
-            <LineChart width={600} height={250} data={productivityData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="productivity" stroke="#ff7300" activeDot={{ r: 8 }} />
+              {/* Render a line for each machine */}
+              {machineData.map((machine) => (
+                <Line
+                  key={machine.id}
+                  type="monotone"
+                  dataKey={machine.name}
+                  stroke={`#${Math.floor(Math.random() * 16777215).toString(16)}`} // Random color
+                  name={machine.name}
+                />
+              ))}
             </LineChart>
           </Card>
         </Col>
       </Row>
 
-      <Row gutter={[16, 16]} style={{ marginTop: '24px' }}>
-        <Col span={12}>
+      {/* Row 3: Employee List */}
+      <Row gutter={[16, 16]}>
+        <Col span={24}>
           <Card>
-            <Title level={4}>Active and Inactive Employees</Title>
-            <Row gutter={[16, 16]}>
-              <Col span={12}>
-                <Card>
-                  <Statistic title="Active Employees" value={activeEmployees} />
-                </Card>
-              </Col>
-              <Col span={12}>
-                <Card>
-                  <Statistic title="Inactive Employees" value={inactiveEmployees} />
-                </Card>
-              </Col>
-            </Row>
+            <Title level={3}>Employee List</Title>
+            <Table
+              columns={employeeColumns}
+              dataSource={employeeData}
+              loading={loading}
+              rowKey="id"
+            />
           </Card>
         </Col>
-        <Col span={12}>
+      </Row>
+
+      {/* Row 4: Machine List */}
+      <Row gutter={[16, 16]}>
+        <Col span={24}>
           <Card>
-            <Title level={4}>Inventory List</Title>
-            <Table columns={columns} dataSource={inventoryData} pagination={{ pageSize: 5 }} />
+            <Title level={3}>Machine List</Title>
+            <Table
+              columns={machineColumns}
+              dataSource={machineData}
+              loading={loading}
+              rowKey="id"
+            />
           </Card>
         </Col>
       </Row>

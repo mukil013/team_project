@@ -12,7 +12,7 @@ router.get('/employees/:companyUid', async (req, res) => {
     res.json(employees);
   } catch (error) {
     res.status(500).json({ message: error.message });
-  }
+  } 
 });
 
 // Update an employee

@@ -1,4 +1,3 @@
-// src/components/Kanban.tsx
 import React, { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
@@ -41,12 +40,12 @@ const initialTasks: Record<string, Task[]> = {
 
 const Kanban: React.FC = () => {
   const [tasks, setTasks] = useState(initialTasks);
-  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
+  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]); // For filtered results
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [selectedColumn, setSelectedColumn] = useState("");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [form] = Form.useForm();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(""); // State for search query
 
   // Fetch tasks from the backend
   useEffect(() => {
@@ -73,6 +72,7 @@ const Kanban: React.FC = () => {
         );
 
         setTasks(organizedTasks);
+        setFilteredTasks(response.data); // Initialize filteredTasks
       } catch (error) {
         console.error("Error fetching tasks:", error);
         message.error("Failed to fetch tasks");
@@ -107,6 +107,7 @@ const Kanban: React.FC = () => {
   }, []);
 
   const userData = JSON.parse(sessionStorage.getItem("user") || "{}");
+  const isAdmin = JSON.parse(sessionStorage.getItem("user")!);
 
   // Add a new task
   const addTask = async (values: Omit<Task, "id" | "column">) => {
@@ -141,6 +142,23 @@ const Kanban: React.FC = () => {
     } catch (error) {
       console.error("Error adding task:", error);
       message.error("Failed to add task");
+    }
+  };
+
+  // Function to delete a task
+  const deleteTask = async (taskId: string, columnId: string) => {
+    try {
+      await axios.delete(`http://localhost:3000/api/tasks/${taskId}`);
+      message.success("Task deleted successfully!");
+
+      // Remove the task from the state
+      setTasks((prevTasks) => ({
+        ...prevTasks,
+        [columnId]: prevTasks[columnId].filter((task) => task.id !== taskId),
+      }));
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      message.error("Failed to delete task");
     }
   };
 
@@ -184,72 +202,48 @@ const Kanban: React.FC = () => {
     }
   };
 
-  // Get border color based on priority
-  const getPriorityBorderColor = (priority: "high" | "medium" | "low") => {
-    switch (priority) {
-      case "high":
-        return "#ff4d4f"; // Red
-      case "medium":
-        return "#faad14"; // Yellow
-      case "low":
-        return "#52c41a"; // Green
-      default:
-        return "#000000";
-    }
-  };
+  // Real-time filter function
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value.toLowerCase();
+    setSearchQuery(query);
 
-  // Combine all tasks into a single array for filtering
-  const getAllTasks = (): Task[] => {
-    return Object.values(tasks).flat();
-  };
-
-  // Filter tasks based on search query
-  useEffect(() => {
-    const allTasks = getAllTasks();
-    const filtered = allTasks.filter(
-      (task) =>
-        task.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.assignedTo.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filtered = Object.values(tasks)
+      .flat()
+      .filter((task) =>
+        task.name.toLowerCase().includes(query) ||
+        task.description.toLowerCase().includes(query) ||
+        task.assignedTo.toLowerCase().includes(query)
+      );
     setFilteredTasks(filtered);
-  }, [searchQuery, tasks]);
+  };
 
   return (
     <div
       style={{
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
-        padding: "20px",
+        gap: "20px",
+        transition: "1s all ease",
       }}
     >
       {/* Search Bar */}
       <Input
-        placeholder="Search by Task ID or Username"
+        placeholder="Search tasks by name, description, or assigned person..."
         value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        style={{ width: "300px", marginBottom: "20px" }}
+        onChange={handleFilterChange}
+        style={{ width: "100%", marginBottom: "20px" }}
       />
 
       {/* Display Filtered Tasks */}
       {searchQuery && (
-        <Card
-          title="Search Results"
-          style={{ width: "300px", marginBottom: "20px" }}
-        >
+        <div>
           {filteredTasks.length > 0 ? (
             filteredTasks.map((task) => (
               <Card
                 key={task.id}
-                style={{
-                  marginTop: "10px",
-                  borderColor: getPriorityBorderColor(task.priority),
-                  borderWidth: "2px",
-                }}
+                style={{ marginBottom: "16px", width: "300px" }}
               >
-                <p>
-                  <strong>{task.name}</strong>
-                </p>
+                <h3>{task.name}</h3>
                 <p>{task.description}</p>
                 <p>Assigned To: {task.assignedTo}</p>
                 <p>ETA: {task.eta}</p>
@@ -259,27 +253,33 @@ const Kanban: React.FC = () => {
           ) : (
             <p>No tasks found.</p>
           )}
-        </Card>
+        </div>
       )}
 
       {/* Kanban Board */}
-      <div style={{ display: "flex", gap: "20px" }}>
+      <div className="flex">
         <DragDropContext onDragEnd={onDragEnd}>
           {["todo", "inProgress", "completed"].map((columnId) => (
             <Droppable key={columnId} droppableId={columnId}>
               {(provided) => (
-                <Card
-                  title={
-                    columnId === "todo"
-                      ? "Todo"
-                      : columnId === "inProgress"
-                      ? "In-Progress"
-                      : "Completed"
-                  }
-                  style={{ width: 300, minHeight: 400 }}
-                  {...provided.droppableProps}
+                <div
                   ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  style={{
+                    margin: "8px",
+                    padding: "8px",
+                    border: "1px solid lightgrey",
+                    borderRadius: ".5rem",
+                    minHeight: "50px",
+                    width: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}
                 >
+                  <h2>
+                    {columnId.charAt(0).toUpperCase() + columnId.slice(1)}
+                  </h2>
                   {tasks[columnId].map((task, index) => (
                     <Draggable
                       key={task.id}
@@ -287,40 +287,72 @@ const Kanban: React.FC = () => {
                       index={index}
                     >
                       {(provided) => (
-                        <Card
-                          style={{
-                            marginTop: "10px",
-                            borderColor: getPriorityBorderColor(task.priority),
-                            borderWidth: "2px",
-                          }}
+                        <div
+                          ref={provided.innerRef}
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
-                          ref={provided.innerRef}
+                          style={{
+                            width: "90%",
+                            userSelect: "none",
+                            padding: "8px",
+                            margin: "2rem 0",
+                            boxShadow: `0 0 0 2px ${
+                              task.priority === "high"
+                                ? "#ff4d4f55"
+                                : task.priority === "medium"
+                                ? "#faad1455"
+                                : task.priority === "low"
+                                ? "#52c41a55"
+                                : "lightgray"
+                            }`,
+                            color: "#000",
+                            borderRadius: "8px",
+                            backdropFilter: "blur(8px)",
+                            ...provided.draggableProps.style,
+                          }}
                         >
-                          <p>
-                            <strong>{task.name}</strong>
+                          <h3 className="text-xl font-extrabold">
+                            {task.name.toUpperCase()}
+                          </h3>
+                          <hr />
+                          <p className="pt-4">{task.description}</p>
+                          <p className="font-bold">
+                            Assigned To: {task.assignedTo}
                           </p>
-                          <p>{task.description}</p>
-                          <p>Assigned To: {task.assignedTo}</p>
                           <p>ETA: {task.eta}</p>
                           <p>Priority: {task.priority}</p>
-                        </Card>
+
+                          {/* Delete Button */}
+                          {isAdmin.isAdmin && (
+                            <Button
+                              type="primary"
+                              variant="filled"
+                              color="danger"
+                              onClick={() => deleteTask(task.id, columnId)}
+                              style={{ marginTop: "8px" }}
+                            >
+                              Delete
+                            </Button>
+                          )}
+                        </div>
                       )}
                     </Draggable>
                   ))}
                   {provided.placeholder}
-                  <Button
-                    type="dashed"
-                    block
-                    style={{ marginTop: "10px" }}
-                    onClick={() => {
-                      setSelectedColumn(columnId);
-                      setIsFormVisible(true);
-                    }}
-                  >
-                    Add Task
-                  </Button>
-                </Card>
+                  {isAdmin.isAdmin && (
+                    <Button
+                      color="default"
+                      variant="dashed"
+                      onClick={() => {
+                        setSelectedColumn(columnId);
+                        setIsFormVisible(true);
+                      }}
+                      style={{ width: "100%" }}
+                    >
+                      Add Task
+                    </Button>
+                  )}
+                </div>
               )}
             </Droppable>
           ))}
@@ -334,36 +366,23 @@ const Kanban: React.FC = () => {
         onCancel={() => setIsFormVisible(false)}
         footer={null}
       >
-        <Form
-          form={form}
-          onFinish={addTask}
-          layout="vertical"
-          initialValues={{ priority: "medium" }}
-        >
+        <Form form={form} onFinish={addTask}>
           <Form.Item
             label="Task Name"
             name="name"
-            rules={[{ required: true, message: "Please enter the task name!" }]}
+            rules={[{ required: true, message: "Please input task name!" }]}
           >
             <Input />
           </Form.Item>
-          <Form.Item
-            label="Task Description"
-            name="description"
-            rules={[
-              { required: true, message: "Please enter the task description!" },
-            ]}
-          >
-            <Input.TextArea rows={3} />
+          <Form.Item label="Description" name="description">
+            <Input.TextArea />
           </Form.Item>
           <Form.Item
-            label="Assign To"
+            label="Assigned To"
             name="assignedTo"
-            rules={[
-              { required: true, message: "Please assign the task to someone!" },
-            ]}
+            rules={[{ required: true, message: "Please select an employee!" }]}
           >
-            <Select placeholder="Select an employee">
+            <Select>
               {employees.map((employee) => (
                 <Option key={employee.id} value={employee.username}>
                   {employee.username} ({employee.role})
@@ -374,14 +393,14 @@ const Kanban: React.FC = () => {
           <Form.Item
             label="ETA"
             name="eta"
-            rules={[{ required: true, message: "Please select the ETA!" }]}
+            rules={[{ required: true, message: "Please select ETA!" }]}
           >
-            <DatePicker showTime format="YYYY-MM-DD HH:mm" />
+            <DatePicker showTime />
           </Form.Item>
           <Form.Item
             label="Priority"
             name="priority"
-            rules={[{ required: true, message: "Please select the priority!" }]}
+            rules={[{ required: true, message: "Please select priority!" }]}
           >
             <Select>
               <Option value="high">High</Option>
@@ -389,11 +408,9 @@ const Kanban: React.FC = () => {
               <Option value="low">Low</Option>
             </Select>
           </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit">
-              Add Task
-            </Button>
-          </Form.Item>
+          <Button type="primary" htmlType="submit">
+            Add Task
+          </Button>
         </Form>
       </Modal>
     </div>
