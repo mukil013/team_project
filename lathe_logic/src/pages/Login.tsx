@@ -9,6 +9,8 @@ const { Title } = Typography;
 const Login: React.FC = () => {
   const [form] = Form.useForm();
 
+  localStorage.removeItem("token");
+
   const onFinish = async (values: any) => {
     try {
       const response = await axios.post(

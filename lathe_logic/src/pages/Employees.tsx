@@ -191,12 +191,7 @@ const Employees: React.FC = () => {
 
   const columns = [
     {
-      title: "ID",
-      dataIndex: "_id",
-      key: "_id",
-    },
-    {
-      title: "Username",
+      title: "Name",
       dataIndex: "username",
       key: "username",
     },

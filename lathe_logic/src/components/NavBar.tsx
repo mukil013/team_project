@@ -42,7 +42,7 @@ export default function NavBar() {
         style={{ width: "fit-content", alignSelf: "center" }}
         onClick={() => {
           localStorage.removeItem("token");
-          window.location.href = '/ ';
+          window.location.href = '/';
         }}
       >
         Logout
