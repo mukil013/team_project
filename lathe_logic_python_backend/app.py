@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 def fetch_machines_from_nodejs(company_uid: str) -> list:
     try:
-        NODEJS_API_URL = os.getenv("NODEJS_API_URL", "http://localhost:3000")
+        NODEJS_API_URL = "http://localhost:3000"
         response = requests.get(f"{NODEJS_API_URL}/api/machines/{company_uid}", timeout=10)
         response.raise_for_status()
         machines = response.json()
@@ -34,7 +34,7 @@ def predict_service():
     try:
         data = request.json
         company_uid = data.get("companyUid")
-        machine_uid = data.get("machineUid")  # Extract machine_uid from request
+        machine_uid = data.get("machineUid")
 
         if not company_uid or not machine_uid:
             logger.warning("companyUid and machineUid are required")

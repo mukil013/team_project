@@ -1,0 +1,29 @@
+services:
+  electron: 
+    build: 
+      context: ../electron
+    depends_on:
+      - frontend
+  frontend:
+    build:
+      context: ../lathe_logic
+    ports:
+      - "5173:5173"
+    depends_on:
+      - node-backend
+      - flask-backend
+    volumes:
+      - ../lathe_logic:/app
+  node-backend:
+    build:
+      context: ../lathe_logic_backend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - flask-backend
+
+  flask-backend:
+    build:
+      context: ../lathe_logic_python_backend
+    ports:
+      - "5000:5000"

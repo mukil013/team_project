@@ -7,7 +7,7 @@ const router = express.Router();
 
 // Super Admin adds a new admin
 router.post('/super-admin/add-admin', async (req, res) => {
-  const { username, email, password, company, role } = req.body;
+  const { username, email, password, company, role, companyUid } = req.body;
   try {
     const existingUser = await User.findOne({ username });
     if (existingUser) return res.status(400).json({ message: 'User already exists' });
@@ -17,7 +17,7 @@ router.post('/super-admin/add-admin', async (req, res) => {
       username,
       email,
       password,
-      companyUid: uuidv4(),
+      companyUid,
       company,
       role,
       isAdmin: true,
@@ -34,7 +34,7 @@ router.post('/super-admin/add-admin', async (req, res) => {
 router.post('/add-user', async (req, res) => {
   const { username, email, password, companyUid, company, role } = req.body;
   try {
-    const existingUser = await User.findOne({ username });
+    const existingUser = await User.findOne({ username, email });
     if (existingUser) return res.status(400).json({ message: 'User already exists' });
 
     const newUser = new User({

@@ -152,11 +152,11 @@ const Dashboard: React.FC = () => {
 
       {/* Row 2: Usage Time Line Chart */}
       <Row gutter={[16, 16]}>
-        <Col span={24}>
+        <Col span={28}>
           <Card>
             <Title level={3}>Machine Usage Over Time</Title>
             <LineChart
-              width={1200}
+              width={1150}
               height={400}
               data={usageData}
               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}

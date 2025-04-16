@@ -1,5 +1,5 @@
 // src/Login.tsx
-import React, { useState } from "react";
+import React from "react";
 import { Form, Input, Button, Checkbox, message, Typography } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import axios from "axios";
@@ -11,7 +11,7 @@ const Login: React.FC = () => {
 
   localStorage.removeItem("token");
 
-  const onFinish = async (values: any) => {
+  const onFinish = async (values: unknown) => {
     try {
       const response = await axios.post(
         "http://localhost:3000/api/auth/login",
@@ -28,7 +28,7 @@ const Login: React.FC = () => {
       message.success("Login successful!");
       window.location.href = "/"; // Redirect to the dashboard
     } catch (error) {
-      message.error("Login failed. Please check your credentials.");
+      message.error("Login failed. Please check your credentials."+error);
     }
   };
 

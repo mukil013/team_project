@@ -47,7 +47,6 @@ const Employees: React.FC = () => {
     const adminDetails = JSON.parse(sessionStorage.getItem("user") || "{}");
     setAdminCompanyUid(adminDetails.companyUid || "");
     setAdminCompany(adminDetails.company || "");
-
     // Fetch employees by companyUid
     fetchEmployeesByCompanyUid(adminDetails.companyUid);
   }, []);
@@ -61,8 +60,8 @@ const Employees: React.FC = () => {
       );
       setEmployees(response.data);
       setFilteredEmployees(response.data); // Initialize filteredEmployees
-    } catch (error) {
-      message.error("Failed to fetch employees");
+    } catch (e) {
+      message.error("Failed to fetch employees"+e);
     }
   };
 
@@ -125,8 +124,8 @@ const Employees: React.FC = () => {
         fetchEmployeesByCompanyUid(adminCompanyUid);
         setIsModalVisible(false);
         form.resetFields();
-      } catch (error) {
-        message.error("Failed to save employee");
+      } catch (e) {
+        message.error("Failed to save employee"+e);
       }
     });
   };
@@ -142,14 +141,9 @@ const Employees: React.FC = () => {
       // Fetch employees again to refresh the list
       fetchEmployeesByCompanyUid(adminCompanyUid);
       message.success("Employee deleted successfully!");
-    } catch (error) {
-      message.error("Failed to delete employee");
+    } catch (e) {
+      message.error("Failed to delete employee"+e);
     }
-  };
-
-  const handleViewRequest = (record: Employee) => {
-    message.info(`Viewing request for ${record.username}`);
-    // Implement view request logic here
   };
 
   const handleApprove = (record: Employee) => {
