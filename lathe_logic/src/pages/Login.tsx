@@ -1,18 +1,21 @@
 // src/Login.tsx
-import React from "react";
-import { Form, Input, Button, Checkbox, message, Typography } from "antd";
-import { UserOutlined, LockOutlined } from "@ant-design/icons";
+import React, { useState } from "react";
+import { Form, Input, Button, message, Typography, Spin, Alert } from "antd";
+import { UserOutlined, LockOutlined, LoadingOutlined } from "@ant-design/icons";
 import axios from "axios";
 
 const { Title } = Typography;
 
 const Login: React.FC = () => {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [invalid, setInvalid] = useState<boolean>(false);
   const [form] = Form.useForm();
 
   localStorage.removeItem("token");
 
   const onFinish = async (values: unknown) => {
     try {
+      setLoading(true);
       const response = await axios.post(
         "http://localhost:3000/api/auth/login",
         values
@@ -25,10 +28,12 @@ const Login: React.FC = () => {
       // Store the user details in sessionStorage
       sessionStorage.setItem("user", JSON.stringify(user));
 
-      message.success("Login successful!");
+      setTimeout(() => setLoading(false), 2000);
       window.location.href = "/"; // Redirect to the dashboard
     } catch (error) {
-      message.error("Login failed. Please check your credentials."+error);
+      setLoading(false);
+      setInvalid(true);
+      message.error("Login failed. Please check your credentials." + error);
     }
   };
 
@@ -49,12 +54,16 @@ const Login: React.FC = () => {
         className="w-[20vw]"
         initialValues={{ remember: true }}
         onFinish={onFinish}
+        style={{
+          height: "200px"
+        }}
       >
         <Form.Item
           name="username"
           rules={[{ required: true, message: "Please input your Username!" }]}
         >
           <Input
+            onInput={() => setInvalid(false)}
             prefix={<UserOutlined className="site-form-item-icon" />}
             placeholder="Username"
           />
@@ -64,24 +73,29 @@ const Login: React.FC = () => {
           rules={[{ required: true, message: "Please input your Password!" }]}
         >
           <Input.Password
+            onInput={() => setInvalid(false)}
             prefix={<LockOutlined className="site-form-item-icon" />}
             type="password"
             placeholder="Password"
           />
         </Form.Item>
         <Form.Item>
-          <Form.Item name="remember" valuePropName="checked" noStyle>
-            <Checkbox>Remember me</Checkbox>
+          <Spin indicator={<LoadingOutlined spin />} spinning={loading}>
+            <Button type="primary" htmlType="submit" className="w-full">
+              Log in
+            </Button>
+          </Spin>
+        </Form.Item>
+        {invalid && (
+          <Form.Item>
+            <Alert
+              message="Invalid Credentials"
+              closable
+              afterClose={() => setInvalid(false)}
+              type="error"
+            />
           </Form.Item>
-          <a className="login-form-forgot" href="">
-            Forgot password
-          </a>
-        </Form.Item>
-        <Form.Item>
-          <Button type="primary" htmlType="submit" className="w-full">
-            Log in
-          </Button>
-        </Form.Item>
+        )}
       </Form>
     </div>
   );

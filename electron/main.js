@@ -4,15 +4,15 @@ let isQuitting = false;
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: 1080,
+    height: 720,
     webPreferences: {
       nodeIntegration: false,
     },
   });
 
   win.loadURL('http://localhost:5173');
-  win.removeMenu();
+  // win.removeMenu();
 }
 
 app.whenReady().then(() => {
