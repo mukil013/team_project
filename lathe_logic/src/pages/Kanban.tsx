@@ -272,6 +272,7 @@ const Kanban: React.FC = () => {
                     borderRadius: ".5rem",
                     minHeight: "50px",
                     width: "100%",
+                    height: "fit-content",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",

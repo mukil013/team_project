@@ -19,7 +19,6 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip as ChartTooltip,
 } from "recharts";
 import axios from "axios";
 import moment, { Moment } from "moment";
@@ -81,8 +80,8 @@ const SandM: React.FC = () => {
 
       setMachines(machinesWithPredictions);
       setFilteredMachines(machinesWithPredictions); // Initialize filteredMachines
-    } catch (error) {
-      message.error("Failed to fetch machines");
+    } catch (error: any) {
+      message.error("Failed to fetch machines", error.messasge);
     }
   };
 
@@ -200,8 +199,8 @@ const SandM: React.FC = () => {
       await axios.delete(`http://localhost:3000/api/machines/${id}`);
       fetchMachinesByCompanyUid(adminCompanyUid);
       message.success("Machine deleted successfully!");
-    } catch (error) {
-      message.error("Failed to delete machine");
+    } catch (error: any) {
+      message.error("Failed to delete machine", error.message);
     }
   };
 

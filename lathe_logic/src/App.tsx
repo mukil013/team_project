@@ -18,7 +18,7 @@ const App = () => {
       <div className="flex h-[100vh]">
         {isUserAuthenticated && isAdmin.isAdmin && <NavBar />}
         {isUserAuthenticated && !isAdmin.isAdmin && <NavBarEmp />}
-        <div className="flex-1 p-4 overflow-auto bg-[#fff]">
+        <div className="flex-1 p-4 overflow-auto bg-[#fff]" style={{scrollbarGutter: "stable"}}>
           <Routes>
             <Route
               path="/"
